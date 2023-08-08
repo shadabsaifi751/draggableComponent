@@ -1,0 +1,108 @@
+const InputColorPicker = React.memo(({ title, Color, handleChange, value, onclose, ...props }) => {
+  const [dragging, setDragging] = useState(false);
+  const [boundary, setBoundry] = useState({})
+  const [position, setPosition] = useState({ x: 92, y: 0 });
+  const startPosition = useRef({ x: 0, y: 0 });
+  const colorPickerRef = useRef(null);
+
+  const handleMouseDown = useCallback((e) => {
+    e.preventDefault();
+    setDragging(true);
+    startPosition.current = { x: e.clientX - position.x, y: e.clientY - position.y };
+  }, [position]);
+
+  const handleMouseUp = useCallback(() => {
+    setDragging(false);
+  }, []);
+
+  const handleMouseMove = useCallback(
+    (e) => {
+      if (!dragging) return;
+      const x = e.clientX - startPosition.current.x;
+      const y = e.clientY - startPosition.current.y;
+
+      // Check if the new position is within the boundaries
+      const boundedX = Math.max(boundary.left, Math.min(x, boundary.right));
+      const boundedY = Math.max(boundary.top, Math.min(y, boundary.bottom));
+
+      setPosition({ x: boundedX, y: boundedY });
+    },
+    [dragging]
+  );
+
+  useLayoutEffect(() => {
+    const colorPickerWrapper = colorPickerRef.current;
+    if (colorPickerWrapper) {
+      colorPickerWrapper.style.left = `${position.x}px`;
+      colorPickerWrapper.style.top = `${position.y}px`;
+    }
+    // Attach event listeners to the document
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mousemove', handleMouseMove);
+
+    // Cleanup event listeners when component unmounts
+    return () => {
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [position, handleMouseUp, handleMouseMove]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setBoundry({
+        top: 0,
+        bottom: window.innerHeight - 555.19, // Height of the color picker (200px) + 10px margin
+        left: 96,
+        right: window.innerWidth - 332, // Width of the color picker (200px) + 10px margin
+
+      })
+    }
+  }, [])
+
+  // const handleClose = (e) => {
+  //   e.stopPropagation()
+  //   // console.log("hello shadab saifiosdnfjksd",dragging)
+  //   setDragging(false)
+  //   onclose()
+  // };
+
+
+  return (
+    <ColorPickerWrap
+      ref={colorPickerRef}
+      style={{
+        position: 'fixed',
+        left: position.x,
+        top: position.y,
+      }}
+    >
+      <CustomColorPickerWraper>
+        <CustomHead
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+          style={{
+            cursor: dragging ? 'grabbing' : 'grab',
+          }}
+        >
+          <h5>{title ? title : 'Pick Color'}</h5>
+          <button onClick={onclose}>&#10006;</button>
+        </CustomHead>
+        <ColorPicker
+          color={Color}
+          onChange={handleChange}
+          className="ColorPicker"
+          value={value}
+          hideGradientStop={true}
+          hideAdvancedSliders={true}
+          hidePresets={true}
+          hideColorGuide={true}
+          hideInputType={true}
+          {...props}
+        />
+      </CustomColorPickerWraper>
+    </ColorPickerWrap>
+  );
+});
+
+export default InputColorPicker;
