@@ -1,0 +1,68 @@
+// components/Loader.js
+import React, { useState, useEffect } from "react";
+
+const Loader = ({ children, isScrollStop }) => {
+  const sectionNames = ["Section 1", "Section 2", "Section 3", "Section 4"];
+
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const [visibleSectionIndex, setVisibleSectionIndex] = useState(-1);
+  const [sectionColors, setSectionColors] = useState([]); // New state for section colors
+
+  useEffect(() => {
+    if (!isScrollStop) {
+      const handleScroll = () => {
+        const sectionHeight = window.innerHeight;
+        const currentIndex = Math.floor(window.scrollY / sectionHeight);
+        setCurrentSectionIndex(currentIndex);
+      };
+
+      window.addEventListener("scroll", handleScroll);
+
+      const intervalId = setInterval(() => {
+        setVisibleSectionIndex(
+          (prevIndex) => (prevIndex + 1) % sectionNames.length
+        );
+
+        // Generate random colors for sections
+        const newColors = sectionNames.map(() => {
+          const randomColor =
+            "#" + Math.floor(Math.random() * 16777215).toString(16); // Generate a random color in hex format
+          return randomColor;
+        });
+
+        setSectionColors(newColors);
+      }, 2000);
+
+      return () => {
+        window.removeEventListener("scroll", handleScroll);
+        clearInterval(intervalId);
+      };
+    }
+  }, [isScrollStop]);
+
+  return (
+    <React.Fragment>
+      {!isScrollStop && (
+        <div className="loader-container">
+          <div className="blur-background" />
+          <div className="loader-content">
+            {sectionNames.map((name, index) => (
+              <p
+                key={index}
+                id={`section-${index + 1}`}
+                className={`section loader_tail ${
+                  currentSectionIndex === index ? "active" : ""
+                }`}
+                style={{ color: sectionColors[index] }} // Apply random color
+              >
+                {name}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+      {children}
+    </React.Fragment>
+  );
+};
+export default Loader;
