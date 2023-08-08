@@ -1,0 +1,113 @@
+import React, { useRef, useState, useEffect } from "react";
+import Loader from "./Loader";
+import "./styles.css";
+
+const sections = [
+  { id: 1, name: "Section 1" },
+  { id: 2, name: "Section 2" },
+  { id: 3, name: "Section 3" },
+  { id: 4, name: "Section 4" }
+  // Add more sections if needed
+];
+
+const App = () => {
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const [isScrollStop, setIsScrollStop] = useState(false);
+  const sectionRefs = useRef([]);
+  const [sectionColors, setSectionColors] = useState([]);
+
+  useEffect(() => {
+    // Populate the sectionRefs with references to each section div
+    sectionRefs.current = sectionRefs.current.slice(0, sections.length);
+  }, [sections]);
+
+  useEffect(() => {
+    // Attach event listeners for scrolling
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      let activeSectionIndex = 0;
+
+      for (let i = 0; i < sectionRefs.current.length; i++) {
+        const sectionTop = sectionRefs.current[i]?.offsetTop || 0;
+        const sectionHeight = sectionRefs.current[i]?.clientHeight || 0;
+        if (
+          scrollPosition >= sectionTop &&
+          scrollPosition < sectionTop + sectionHeight
+        ) {
+          activeSectionIndex = i;
+          break;
+        }
+      }
+
+      setCurrentSectionIndex(activeSectionIndex);
+    };
+
+    document.addEventListener("scroll", handleScroll);
+    return () => {
+      document.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Auto-scroll through sections and back to the top only if not already scrolled
+    if (!isScrollStop) {
+      const autoScroll = () => {
+        const newIndex = (currentSectionIndex + 1) % (sections.length + 1);
+        if (newIndex === sections.length) {
+          // Stop the auto-scrolling and scroll back to the top
+          setCurrentSectionIndex(0);
+          scrollToTop();
+          setIsScrollStop(true);
+        } else {
+          setCurrentSectionIndex(newIndex);
+          scrollToSection(newIndex);
+        }
+      };
+
+      const timeout = setTimeout(autoScroll, 2000); // Change the time (in milliseconds) between auto-scrolls here
+      // Generate random colors for sections
+      const newColors = sections.map(() => {
+        const randomColor =
+          "#" + Math.floor(Math.random() * 16777215).toString(16); // Generate a random color in hex format
+        return randomColor;
+      });
+
+      setSectionColors(newColors);
+      return () => {
+        clearTimeout(timeout);
+      };
+    }
+  }, [currentSectionIndex, isScrollStop, sections.length]);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const scrollToSection = (index) => {
+    if (sectionRefs.current[index]) {
+      // Scroll to the section at the given index
+      sectionRefs.current[index].scrollIntoView({
+        behavior: "smooth"
+      });
+    }
+  };
+
+  console.log(currentSectionIndex, "currentSectionIndex");
+
+  return sections.map((section, index) => (
+    <Loader isScrollStop={isScrollStop}>
+      <section
+        key={section.id}
+        ref={(el) => (sectionRefs.current[index] = el)}
+        style={{ background: sectionColors[index], height: "800px" }}
+      >
+        <div>
+          <h2>{section.name}</h2>
+          {/* Add the content of each section here */}
+        </div>
+      </section>
+    </Loader>
+  ));
+};
+
+export default App;
